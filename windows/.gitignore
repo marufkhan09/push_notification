@@ -1,0 +1,62 @@
+# Flutter/Dart related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+flutter_*.jpg
+flutter_*.jpeg
+flutter_*.gif
+flutter_*.svg
+
+# Android related
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/local.properties
+android/.idea
+android/app/src/main/kotlin/**/*.kt
+android/app/src/main/java/**/*.java
+android/app/src/main/res/drawable/**/*.xml
+android/app/src/main/res/mipmap/**/*.xml
+
+# iOS related
+ios/Flutter/.last_build_id
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Pods/
+ios/Podfile.lock
+ios/Runner.xcworkspace/
+ios/.generated/
+ios/.idea/
+
+# Miscellaneous
+*.log
+*.DS_Store
+*.sublime-workspace
+*.sublime-project
+*.iml
+.idea/
+.vscode/
+*.user
+*.lock
+*.swp
+
+# Generated files
+*.class
+*.apk
+*.aab
+*.so
+*.h
+*.o
+*.dSYM
+*.ipa
+
+# IDE configurations
+*.idea/
+*.vscode/
+*.project
+*.classpath
+.settings/

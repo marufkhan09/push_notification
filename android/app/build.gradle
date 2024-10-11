@@ -1,0 +1,56 @@
+// App-level (module-level) build.gradle (android/app/build.gradle)
+
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services" // Apply the Google services Gradle plugin
+}
+
+android {
+    namespace = "com.app.push_notification"
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    defaultConfig {
+        // Specify your own unique Application ID
+        applicationId = "com.app.push_notification"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            // Add your own signing config for the release build
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+// Add Firebase SDK dependencies
+dependencies {
+    // Import the Firebase BoM (Bill of Materials)
+    implementation platform('com.google.firebase:firebase-bom:33.4.0')
+
+    // Add Firebase SDKs you want to use
+    implementation 'com.google.firebase:firebase-analytics' // For Firebase Analytics
+    implementation 'com.google.firebase:firebase-messaging' // For Firebase Cloud Messaging
+
+    // Other dependencies can be added here
+}
+
+flutter {
+    source = "../.."
+}
