@@ -3,16 +3,28 @@ import 'dart:developer';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // This will be called when the app is in the background
   log("Handling a background message: ${message.messageId}");
-  // You can also show notifications or perform other actions here
 }
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize local notifications
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   // Register the background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
@@ -63,8 +75,32 @@ class _MyHomePageState extends State<MyHomePage> {
         _message = message.notification?.body ?? "No message body";
       });
 
-      // Show a notification or do something with the message here
+      // Show a local notification for foreground messages
+      _showLocalNotification(message.notification?.title, message.notification?.body);
     });
+  }
+
+  // Function to show a local notification
+  Future<void> _showLocalNotification(String? title, String? body) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'default_notification_channel_id', // Channel ID
+      'Default Channel', // Channel name
+      channelDescription: 'This is the default notification channel', // Channel description
+      importance: Importance.max,
+      priority: Priority.high,
+      showWhen: false,
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // Notification ID
+      title ?? 'No title', // Notification title
+      body ?? 'No body', // Notification body
+      platformChannelSpecifics,
+    );
   }
 
   @override
