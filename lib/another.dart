@@ -1,7 +1,4 @@
-
-
 import 'package:flutter/material.dart';
-
 
 class AnotherPage extends StatelessWidget {
   const AnotherPage({super.key});

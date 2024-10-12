@@ -1,4 +1,8 @@
+import 'dart:developer';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:push_notification/fcm_service.dart';
 import 'package:push_notification/local_notifications.dart';
 
 class Homepage extends StatefulWidget {
@@ -12,15 +16,24 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     listenToNotifications();
+    FCMService.initializeFCM(); // Initialize FCM
     super.initState();
   }
 
 //  to listen to any notification clicked or not
   listenToNotifications() {
-    print("Listening to notification");
+    log("Listening to notification");
+
     LocalNotifications.onClickNotification.stream.listen((event) {
-      print(event);
+      log(event);
       Navigator.pushNamed(context, '/another', arguments: event);
+    });
+
+    // Listen for notification clicks from FCM (if using payload)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      log('A new onMessageOpenedApp event was published!');
+      Navigator.pushNamed(context, '/another',
+          arguments: message.data.toString());
     });
   }
 

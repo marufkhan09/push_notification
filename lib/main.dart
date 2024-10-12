@@ -1,57 +1,34 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:push_notification/another.dart';
-import 'package:push_notification/home.dart';
-import 'package:push_notification/local_notifications.dart';
+import 'dart:developer';
 
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:push_notification/local_notifications.dart';
+import 'fcm_service.dart'; // Import your FCM service file
 
 final navigatorKey = GlobalKey<NavigatorState>();
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LocalNotifications.init();
+  await Firebase.initializeApp(); // Initialize Firebase
+  await LocalNotifications.init(); // Initialize Local Notifications
 
-//  handle in terminated state
-  var initialNotification =
-      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
-  if (initialNotification?.didNotificationLaunchApp == true) {
-    // LocalNotifications.onClickNotification.stream.listen((event) {
-    Future.delayed(Duration(seconds: 1), () {
-      // print(event);
-      navigatorKey.currentState!.pushNamed('/another',
-          arguments: initialNotification?.notificationResponse?.payload);
-    });
-  }
+  // Handle notifications when the app is in a terminated state
+  FirebaseMessaging.onBackgroundMessage(FCMService.backgroundHandler);
 
+  // Run the app
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'Flutter Demo',
+      title: 'Flutter Notification Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
@@ -59,6 +36,119 @@ class MyApp extends StatelessWidget {
         '/': (context) => const Homepage(),
         '/another': (context) => const AnotherPage(),
       },
+    );
+  }
+}
+
+// In your existing Homepage, add the FCM initialization
+class Homepage extends StatefulWidget {
+  const Homepage({super.key});
+
+  @override
+  State<Homepage> createState() => _HomepageState();
+}
+
+class _HomepageState extends State<Homepage> {
+  @override
+  void initState() {
+    listenToNotifications();
+    FCMService.initializeFCM(); // Initialize FCM
+    super.initState();
+  }
+
+  listenToNotifications() {
+    log("Listening to notification");
+
+    // Listen for local notifications
+    LocalNotifications.onClickNotification.stream.listen((event) {
+      log(event);
+      Navigator.pushNamed(context, '/another', arguments: event);
+    });
+
+    // Listen for FCM messages
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      log('A new onMessageOpenedApp event was published!');
+      Navigator.pushNamed(context, '/another',
+          arguments: message.data.toString());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Flutter Local Notifications")),
+      body: Container(
+        height: double.infinity,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                icon: Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  LocalNotifications.showSimpleNotification(
+                    title: "Simple Notification",
+                    body: "This is a simple notification",
+                    payload: "This is simple data",
+                  );
+                },
+                label: Text("Simple Notification"),
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.timer_outlined),
+                onPressed: () {
+                  LocalNotifications.showPeriodicNotifications(
+                    title: "Periodic Notification",
+                    body: "This is a Periodic Notification",
+                    payload: "This is periodic data",
+                  );
+                },
+                label: Text("Periodic Notifications"),
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.timer_outlined),
+                onPressed: () {
+                  LocalNotifications.showScheduleNotification(
+                    title: "Schedule Notification",
+                    body: "This is a Schedule Notification",
+                    payload: "This is schedule data",
+                  );
+                },
+                label: Text("Schedule Notifications"),
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.delete_outline),
+                onPressed: () {
+                  LocalNotifications.cancel(1);
+                },
+                label: Text("Close Periodic Notifications"),
+              ),
+              ElevatedButton.icon(
+                icon: Icon(Icons.delete_forever_outlined),
+                onPressed: () {
+                  LocalNotifications.cancelAll();
+                },
+                label: Text("Cancel All Notifications"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Your AnotherPage class remains unchanged
+class AnotherPage extends StatelessWidget {
+  const AnotherPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = ModalRoute.of(context)!.settings.arguments;
+
+    return Scaffold(
+      appBar: AppBar(title: Text("Another Page")),
+      body: Center(child: Text(data.toString())),
     );
   }
 }
