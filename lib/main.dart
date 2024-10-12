@@ -1,117 +1,64 @@
-import 'dart:developer';
-
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:push_notification/another.dart';
+import 'package:push_notification/home.dart';
+import 'package:push_notification/local_notifications.dart';
 
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // This will be called when the app is in the background
-  log("Handling a background message: ${message.messageId}");
-}
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
+final navigatorKey = GlobalKey<NavigatorState>();
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await LocalNotifications.init();
 
-  // Initialize local notifications
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+//  handle in terminated state
+  var initialNotification =
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+  if (initialNotification?.didNotificationLaunchApp == true) {
+    // LocalNotifications.onClickNotification.stream.listen((event) {
+    Future.delayed(Duration(seconds: 1), () {
+      // print(event);
+      navigatorKey.currentState!.pushNamed('/another',
+          arguments: initialNotification?.notificationResponse?.payload);
+    });
+  }
 
-  const InitializationSettings initializationSettings = InitializationSettings(
-    android: initializationSettingsAndroid,
-  );
-
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
-  // Register the background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Push Notification Example',
+      navigatorKey: navigatorKey,
+      title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        // This is the theme of your application.
+        //
+        // TRY THIS: Try running your application with "flutter run". You'll see
+        // the application has a blue toolbar. Then, without quitting the app,
+        // try changing the seedColor in the colorScheme below to Colors.green
+        // and then invoke "hot reload" (save your changes or press the "hot
+        // reload" button in a Flutter-supported IDE, or press "r" if you used
+        // the command line to start the app).
+        //
+        // Notice that the counter didn't reset back to zero; the application
+        // state is not lost during the reload. To reset the state, use hot
+        // restart instead.
+        //
+        // This works for code too, not just values: Most code changes can be
+        // tested with just a hot reload.
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
-      home: MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  String _message = '';
-
-  @override
-  void initState() {
-    super.initState();
-    // Request permission for iOS
-    FirebaseMessaging.instance.requestPermission();
-
-    // Get the FCM token
-    FirebaseMessaging.instance.getToken().then((token) {
-      log("FCM Token: $token"); // Use this token to send notifications
-    });
-
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      log("Received a foreground message: ${message.messageId}");
-      setState(() {
-        _message = message.notification?.body ?? "No message body";
-      });
-
-      // Show a local notification for foreground messages
-      _showLocalNotification(message.notification?.title, message.notification?.body);
-    });
-  }
-
-  // Function to show a local notification
-  Future<void> _showLocalNotification(String? title, String? body) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'default_notification_channel_id', // Channel ID
-      'Default Channel', // Channel name
-      channelDescription: 'This is the default notification channel', // Channel description
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: false,
-    );
-
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
-
-    await flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
-      title ?? 'No title', // Notification title
-      body ?? 'No body', // Notification body
-      platformChannelSpecifics,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Push Notification Example"),
-      ),
-      body: Center(
-        child: Text(_message),
-      ),
+      routes: {
+        '/': (context) => const Homepage(),
+        '/another': (context) => const AnotherPage(),
+      },
     );
   }
 }
