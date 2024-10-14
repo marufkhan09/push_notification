@@ -1,22 +1,30 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:push_notification/local_notifications.dart';
+import 'package:push_notification/notidetail.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:timezone/data/latest.dart' as tz; // Keep this for timezone data
+import 'package:timezone/timezone.dart' as tz; // Correct import for TZDateTime
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize time zones for notifications
   tz.initializeTimeZones();
-
-  // Initialize local notifications
   await LocalNotifications.init();
+
+  // Listen for notification taps
+  LocalNotifications.onClickNotification.listen((payload) {
+    MyApp.navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (context) => NotificationDetailPage(payload: payload),
+      ),
+    );
+  });
 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // Create a global navigator key
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -25,8 +33,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey, // Use the global navigator key
-      title: 'iOS Notification Demo',
+      navigatorKey: navigatorKey,
+      title: 'Notification Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -42,113 +50,50 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Static Notification for iOS'),
+        title: const Text('Notification Demo'),
       ),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            LocalNotifications.showSimpleNotification(
-              title: 'Hello',
-              body: 'This is a static notification',
-              payload: 'notification_payload',
-            );
-          },
-          child: const Text('Show Notification'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                LocalNotifications.showSimpleNotification(
+                  title: 'Hello',
+                  body: 'This is a simple notification',
+                  payload: 'simple_payload',
+                );
+              },
+              child: const Text('Show Simple Notification'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                LocalNotifications.showPeriodicNotifications(
+                  title: 'Periodic Notification',
+                  body: 'This notification shows periodically every minute.',
+                  payload: 'periodic_payload',
+                );
+              },
+              child: const Text('Show Periodic Notification'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                // Schedule notification for 5 seconds from now
+                DateTime scheduledDate =
+                    DateTime.now().add(Duration(seconds: 5));
+                LocalNotifications.showScheduleNotification(
+                  title: "Scheduled Notification",
+                  body: "This is a scheduled notification.",
+                  payload: "scheduled_payload",
+                  scheduledDate: tz.TZDateTime.from(scheduledDate,
+                      tz.local), // Convert DateTime to TZDateTime
+                );
+              },
+              child: const Text('Show Scheduled Notification'),
+            ),
+          ],
         ),
       ),
     );
-  }
-}
-
-// New Page to navigate to when notification is tapped
-class NotificationDetailPage extends StatelessWidget {
-  final String payload;
-
-  const NotificationDetailPage({Key? key, required this.payload})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notification Details'),
-      ),
-      body: Center(
-        child: Text('Tapped notification with payload: $payload'),
-      ),
-    );
-  }
-}
-
-// Notification service class
-class LocalNotifications {
-  static final FlutterLocalNotificationsPlugin
-      _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
-  static Future init() async {
-    final DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings(
-      onDidReceiveLocalNotification: (id, title, body, payload) async {
-        // Handle notification received in foreground (if needed)
-      },
-    );
-
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-      iOS: initializationSettingsDarwin,
-    );
-
-    // Initialize notifications
-    await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: (response) {
-        // Handle notification tap
-        final payload = response.payload;
-        if (payload != null) {
-          // Use the global navigator key to navigate
-          MyApp.navigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => NotificationDetailPage(payload: payload),
-            ),
-          );
-        }
-      },
-    );
-
-    // Request permissions for iOS
-    final bool? granted = await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-    log("Notification permission granted: $granted");
-  }
-
-  // Show a simple notification
-  static Future showSimpleNotification({
-    required String title,
-    required String body,
-    required String payload,
-  }) async {
-    const DarwinNotificationDetails iosNotificationDetails =
-        DarwinNotificationDetails();
-
-    const NotificationDetails notificationDetails = NotificationDetails(
-      iOS: iosNotificationDetails,
-    );
-
-    await _flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
-
-    log('Notification triggered');
   }
 }

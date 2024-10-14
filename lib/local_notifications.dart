@@ -1,7 +1,16 @@
+import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:push_notification/main.dart';
+import 'package:push_notification/notidetail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+// Top-level background handler function
+Future<void> backgroundHandler(NotificationResponse response) async {
+  LocalNotifications.onNotificationTap(response);
+}
 
 class LocalNotifications {
   static final FlutterLocalNotificationsPlugin
@@ -13,23 +22,23 @@ class LocalNotifications {
     onClickNotification.add(notificationResponse.payload!);
   }
 
-  // initialize the local notifications
-  static Future init() async {
-    // initialize Android settings
+  // Initialize the local notifications
+  static Future<void> init() async {
+    // Initialize Android settings
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // initialize iOS settings
+    // Initialize iOS settings
     final DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
       onDidReceiveLocalNotification: (id, title, body, payload) => null,
     );
 
-    // initialize Linux settings
+    // Initialize Linux settings (if needed)
     const LinuxInitializationSettings initializationSettingsLinux =
         LinuxInitializationSettings(defaultActionName: 'Open notification');
 
-    // apply platform-specific initialization settings
+    // Apply platform-specific initialization settings
     final InitializationSettings initializationSettings =
         InitializationSettings(
       android: initializationSettingsAndroid,
@@ -37,14 +46,14 @@ class LocalNotifications {
       linux: initializationSettingsLinux,
     );
 
-    // request permissions on Android
+    // Request permissions for Android
     await _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        !.requestNotificationsPermission();
+        ?.requestNotificationsPermission();
 
-    // request permissions on iOS
-    await _flutterLocalNotificationsPlugin
+    // Request permissions for iOS
+    final bool? granted = await _flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(
@@ -53,106 +62,148 @@ class LocalNotifications {
           sound: true,
         );
 
-    // initialize notifications
+    log("Notification permission granted (iOS): $granted");
+
+    // Initialize notifications
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: onNotificationTap,
-      onDidReceiveBackgroundNotificationResponse: onNotificationTap,
+      onDidReceiveNotificationResponse: (response) {
+        // Handle notification tap in the foreground
+        onNotificationTap(response);
+      },
+      onDidReceiveBackgroundNotificationResponse: backgroundHandler,
     );
+
+    // Listen for notification taps
+    onClickNotification.listen((payload) {
+      // Navigate to the desired screen based on the payload
+      MyApp.navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => NotificationDetailPage(payload: payload),
+        ),
+      );
+    });
   }
 
-  // show a simple notification
+  // Show a simple notification
   static Future showSimpleNotification({
     required String title,
     required String body,
     required String payload,
   }) async {
+    // Android Notification Details
     const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails('your_channel_id', 'your channel name',
-            channelDescription: 'your channel description',
-            importance: Importance.max,
-            priority: Priority.high,
-            ticker: 'ticker');
+        AndroidNotificationDetails(
+      'your_channel_id',
+      'your_channel_name',
+      channelDescription: 'your_channel_description',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
 
+    // iOS Notification Details
     const DarwinNotificationDetails iosNotificationDetails =
         DarwinNotificationDetails(
       badgeNumber: 1,
     );
 
+    // Combine notification details for both platforms
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
       iOS: iosNotificationDetails,
     );
 
-    await _flutterLocalNotificationsPlugin
-        .show(0, title, body, notificationDetails, payload: payload);
+    await _flutterLocalNotificationsPlugin.show(
+      0, // Notification ID
+      title,
+      body,
+      notificationDetails,
+      payload: payload,
+    );
+
+    log('Notification triggered');
   }
 
-  // to show periodic notifications at regular intervals
+  // Show periodic notifications
   static Future showPeriodicNotifications({
     required String title,
     required String body,
     required String payload,
   }) async {
+    // Android Notification Details
     const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails('channel_2', 'your channel name',
-            channelDescription: 'your channel description',
-            importance: Importance.max,
-            priority: Priority.high,
-            ticker: 'ticker');
+        AndroidNotificationDetails(
+      'channel_2',
+      'your_channel_name',
+      channelDescription: 'your_channel_description',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
 
+    // iOS Notification Details
     const DarwinNotificationDetails iosNotificationDetails =
         DarwinNotificationDetails(
       badgeNumber: 1,
     );
 
+    // Combine notification details for both platforms
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
       iOS: iosNotificationDetails,
     );
 
     await _flutterLocalNotificationsPlugin.periodicallyShow(
-        1, title, body, RepeatInterval.everyMinute, notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: payload);
+      1,
+      title,
+      body,
+      RepeatInterval.everyMinute,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: payload,
+    );
   }
 
-  // to schedule a local notification
+  // Schedule a local notification
   static Future showScheduleNotification({
     required String title,
     required String body,
     required String payload,
+    required tz.TZDateTime scheduledDate, // Ensure this is TZDateTime
   }) async {
     tz.initializeTimeZones();
     await _flutterLocalNotificationsPlugin.zonedSchedule(
-        2,
-        title,
-        body,
-        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 5)),
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'channel_3', 'your channel name',
-            channelDescription: 'your channel description',
-            importance: Importance.max,
-            priority: Priority.high,
-            ticker: 'ticker',
-          ),
-          iOS: DarwinNotificationDetails(
-            badgeNumber: 1,
-          ),
+      2,
+      title,
+      body,
+      scheduledDate, // Now this is already a TZDateTime
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'channel_3',
+          'your_channel_name',
+          channelDescription: 'your_channel_description',
+          importance: Importance.max,
+          priority: Priority.high,
+          ticker: 'ticker',
         ),
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: payload);
+        iOS: DarwinNotificationDetails(
+          badgeNumber: 1,
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
   }
 
-  // close a specific channel notification
+  // Close a specific channel notification
   static Future cancel(int id) async {
     await _flutterLocalNotificationsPlugin.cancel(id);
   }
 
-  // close all notifications
+  // Close all notifications
   static Future cancelAll() async {
     await _flutterLocalNotificationsPlugin.cancelAll();
   }

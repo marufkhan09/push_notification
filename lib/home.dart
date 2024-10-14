@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:push_notification/fcm_service.dart';
 import 'package:push_notification/local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -70,10 +71,19 @@ class _HomepageState extends State<Homepage> {
               ElevatedButton.icon(
                 icon: Icon(Icons.timer_outlined),
                 onPressed: () {
+                  // Import the necessary timezone data
+
+// Inside your button's onPressed callback
+                  DateTime scheduledDate = DateTime.now().add(
+                      Duration(seconds: 5)); // Change the duration as needed
+
                   LocalNotifications.showScheduleNotification(
-                      title: "Schedule Notification",
-                      body: "This is a Schedule Notification",
-                      payload: "This is schedule data");
+                    title: "Schedule Notification",
+                    body: "This is a Schedule Notification",
+                    payload: "This is schedule data",
+                    scheduledDate: tz.TZDateTime.from(scheduledDate,
+                        tz.local), // Convert DateTime to TZDateTime
+                  );
                 },
                 label: Text("Schedule Notifications"),
               ),
