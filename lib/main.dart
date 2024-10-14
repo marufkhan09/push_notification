@@ -1,9 +1,6 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:push_notification/local_notifications.dart';
 import 'package:push_notification/notidetail.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:timezone/data/latest.dart' as tz; // Keep this for timezone data
 import 'package:timezone/timezone.dart' as tz; // Correct import for TZDateTime
 
@@ -44,7 +41,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatelessWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
