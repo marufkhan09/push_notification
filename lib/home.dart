@@ -16,7 +16,7 @@ class _HomepageState extends State<Homepage> {
   @override
   void initState() {
     listenToNotifications();
-    FCMService.initializeFCM(); // Initialize FCM
+    FCMService.initializeFCM(context); // Initialize FCM
     super.initState();
   }
 
