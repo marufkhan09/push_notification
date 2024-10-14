@@ -1,5 +1,4 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -17,11 +16,16 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  // Create a global navigator key
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, // Use the global navigator key
       title: 'iOS Notification Demo',
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -56,6 +60,26 @@ class MyHomePage extends StatelessWidget {
   }
 }
 
+// New Page to navigate to when notification is tapped
+class NotificationDetailPage extends StatelessWidget {
+  final String payload;
+
+  const NotificationDetailPage({Key? key, required this.payload})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notification Details'),
+      ),
+      body: Center(
+        child: Text('Tapped notification with payload: $payload'),
+      ),
+    );
+  }
+}
+
 // Notification service class
 class LocalNotifications {
   static final FlutterLocalNotificationsPlugin
@@ -65,7 +89,7 @@ class LocalNotifications {
     final DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
       onDidReceiveLocalNotification: (id, title, body, payload) async {
-        // Handle notification received in foreground
+        // Handle notification received in foreground (if needed)
       },
     );
 
@@ -79,6 +103,15 @@ class LocalNotifications {
       initializationSettings,
       onDidReceiveNotificationResponse: (response) {
         // Handle notification tap
+        final payload = response.payload;
+        if (payload != null) {
+          // Use the global navigator key to navigate
+          MyApp.navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => NotificationDetailPage(payload: payload),
+            ),
+          );
+        }
       },
     );
 

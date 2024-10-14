@@ -53,16 +53,6 @@ class LocalNotifications {
           sound: true,
         );
 
-    // request permissions on macOS (if applicable)
-    await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            MacOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
     // initialize notifications
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
