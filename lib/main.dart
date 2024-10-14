@@ -21,6 +21,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
   const MyApp({super.key});
 
   @override
@@ -34,7 +36,9 @@ class MyApp extends StatelessWidget {
       ),
       routes: {
         '/': (context) => const Homepage(),
-        '/another': (context) => const AnotherPage(),
+        '/another': (context) => AnotherPage(
+              payload: ModalRoute.of(context)!.settings.arguments as String,
+            ),
       },
     );
   }
@@ -77,7 +81,7 @@ class _HomepageState extends State<Homepage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Flutter Local Notifications")),
-      body: Container(
+      body: SizedBox(
         height: double.infinity,
         child: Center(
           child: Column(
@@ -140,7 +144,8 @@ class _HomepageState extends State<Homepage> {
 
 // Your AnotherPage class remains unchanged
 class AnotherPage extends StatelessWidget {
-  const AnotherPage({super.key});
+  final String payload;
+  const AnotherPage({super.key, required this.payload});
 
   @override
   Widget build(BuildContext context) {
